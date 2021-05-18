@@ -1,0 +1,63 @@
+<?PHP
+require ('include/PDF.php');
+require ('include/class.pdogsb.inc.php');
+require ('include/fct.inc.php');
+$pdo = PdoGsb::getPdoGsb();
+$idVisiteur=$_REQUEST['idVisiteur'];
+$leMois=$_REQUEST['leMois'];
+$visiteur=$pdo->getVisiteur($idVisiteur);
+$fraisForfais=$pdo->getLesAdherents();
+$valeurFraisForfaits=$pdo->getLesFraisForfait($idVisiteur, $leMois);
+$valeurHorsFraisForfaits=$pdo->getLesFraisHorsForfait($idVisiteur,$leMois);
+$ficheFrais=$pdo->getLesInfosFicheFrais($idVisiteur,$leMois);
+$pdf = new PDF();
+$pdf->AliasNbPages();
+$pdf->AddPage();
+$pdf->SetFont('Times','B',12);
+$pdf->Cell(40,10,'Visiteur :'.$visiteur['nom'].' '.$visiteur['prenom'],0,1);
+$pdf->Cell(40,10,'Mois :'.$leMois,0,1);
+$pdf->SetFont('Times','',12);
+$pdf->Cell(40,10,'Frais Forfaitaires',1,0);
+$pdf->Cell(40,10,'Quantite',1,0);
+$pdf->Cell(40,10,'Montant unitaire',1,0);
+$pdf->Cell(40,10,'Total',1,1);
+$pdf->Cell(40,10,'Forfait Etape ',1,0);
+$pdf->Cell(40,10,$valeurFraisForfaits[0][2],1,0);
+$pdf->Cell(40,10,$fraisForfais['ETP']['montant'],1,0);
+$pdf->Cell(40,10,$a=$valeurFraisForfaits[0][2]*$fraisForfais['ETP']['montant'],1,1);;
+$pdf->Cell(40,10,'Frais Kilometrique',1,0);
+$pdf->Cell(40,10,$valeurFraisForfaits[1][2],1,0);
+$pdf->Cell(40,10,$fraisForfais['KM']['montant'],1,0);
+$pdf->Cell(40,10,$b=$valeurFraisForfaits[1][2]*$fraisForfais['KM']['montant'],1,1);
+$pdf->Cell(40,10,'Nuitee Hotel',1,0);
+$pdf->Cell(40,10,$valeurFraisForfaits[2][2],1,0);
+$pdf->Cell(40,10,$fraisForfais['NUI']['montant'],1,0);
+$pdf->Cell(40,10,$c=$valeurFraisForfaits[2][2]*$fraisForfais['NUI']['montant'],1,1);
+$pdf->Cell(40,10,'Repas Restaurant ',1,0);
+$pdf->Cell(40,10,$valeurFraisForfaits[3][2],1,0);
+$pdf->Cell(40,10,$fraisForfais['REP']['montant'],1,0);
+$pdf->Cell(40,10,$d=$valeurFraisForfaits[3][2]*$fraisForfais['REP']['montant'],1,1);
+$total = $a+$b+$c+$d;
+$pdf->SetFont('Times','B',12);
+$pdf->cell(40,30,"Autres frais ",0,1);
+$pdf->SetFont('Times','',12);
+$pdf->Cell(40,10,'Date',1,0);
+$pdf->Cell(80,10,'Libelle',1,0);
+$pdf->Cell(40,10,'Montant',1,1);
+foreach ($valeurHorsFraisForfaits as $uneLigne){
+    $total = $total+$uneLigne[5];
+    $pdf->Cell(40,10,$uneLigne[4],1,0);
+    $pdf->Cell(80,10,utf8_decode($uneLigne[3]),1,0);
+    $pdf->Cell(40,10,$uneLigne[5],1,1);
+    //echo $uneLigne[4]." ".$uneLigne[3]." ".$uneLigne[5]."<br/>";
+}
+$pdf->SetFont('Times','B',12);
+$pdf->Cell(40,10,"Total : ".$total,0,1);
+$reste=$total-$ficheFrais[3];
+if ($reste<0){$reste=0;}
+$pdf->Cell(40,10,utf8_decode("Montant refusé : ").$reste,0,1);
+$pdf->Cell(40,10,utf8_decode("Montant Validé : ").$ficheFrais[3],0,1);
+$pdf->Cell(40,10,utf8_decode("Fait à ".$visiteur['ville']." le : ").$ficheFrais[1],0,1);
+$pdf->Cell(40,10,"Vu l'agent comptable",0,1);
+$pdf->Output();
+?>
